@@ -14,6 +14,22 @@ function textMask() {
       var inputElement
       var textMaskInputElement
 
+      function setCaretPosition(ctrl, pos) {
+        // Modern browsers
+        if (ctrl.setSelectionRange) {
+          ctrl.focus();
+          ctrl.setSelectionRange(pos, pos);
+        
+        // IE8 and below
+        } else if (ctrl.createTextRange) {
+          var range = ctrl.createTextRange();
+          range.collapse(true);
+          range.moveEnd('character', pos);
+          range.moveStart('character', pos);
+          range.select();
+        }
+      }
+
       if (element[0].tagName === 'INPUT') {
         // `textMask` directive is used directly on an input element
         inputElement = element[0]
@@ -25,6 +41,19 @@ function textMask() {
       element.on('blur keyup change input', function() {
         textMaskInputElement.update(inputElement.value)
         ngModel.$setViewValue(inputElement.value)
+      })
+
+      element.on('click', function() {
+        var regex = /(\d)(?!.*\d)/;
+        var lastDigit = !!inputElement.value ? regex.exec(inputElement.value)[0] : null;
+        var lastDigitIndex = !!lastDigit ? inputElement.value.lastIndexOf(lastDigit) : null;
+        var caretPosition = !!lastDigitIndex && [' ', '-'].indexOf(inputElement.value[lastDigitIndex+1]) > -1
+          ? lastDigitIndex+1
+          : lastDigitIndex;
+
+        if (caretPosition < inputElement.selectionStart) {
+          setCaretPosition(inputElement, caretPosition ? caretPosition+1 : 0);
+        }
       })
 
       // reset Text Mask when `scope.textMask` object changes
